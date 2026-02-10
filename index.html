@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Productivity">
+    <meta name="theme-color" content="#667eea">
+    
+    <title>Productivity App</title>
+    
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link rel="icon" type="image/png" href="icon-192.png">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            padding-bottom: 100px;
+            overscroll-behavior: none;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px 20px;
+            position: relative;
+        }
+        
+        .burger-menu {
+            position: absolute;
+            top: 25px;
+            right: 20px;
+            width: 30px;
+            height: 30px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 5px;
+        }
+        
+        .burger-line {
+            width: 100%;
+            height: 3px;
+            background: white;
+            border-radius: 2px;
+            transition: all 0.3s;
+        }
+        
+        .burger-menu.active .burger-line:nth-child(1) {
+            transform: rotate(45deg) translate(7px, 7px);
+        }
+        
+        .burger-menu.active .burger-line:nth-child(2) {
+            opacity: 0;
+        }
+        
+        .burger-menu.active .burger-line:nth-child(3) {
+            transform: rotate(-45deg) translate(7px, -7px);
+        }
+        
+        .side-menu {
+            position: fixed;
+            top: 0;
+            right: -300px;
+            width: 300px;
+            height: 100%;
+            background: white;
+            box-shadow: -5px 0 15px rgba(0,0,0,0.3);
+            transition: right 0.3s;
+            z-index: 1000;
+            padding-top: 60px;
+            overflow-y: auto;
+        }
+        
+        .side-menu.active {
+            right: 0;
+        }
+        
+        .menu-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        
+        .menu-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .menu-item {
+            padding: 20px 30px;
+            border-bottom: 1px solid #f0f0f0;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .menu-item:hover {
+            background: #f8f8f8;
+        }
+        
+        .menu-item.active {
+            background: #e8eaf6;
+            border-left: 4px solid #667eea;
+        }
+        
+        .menu-icon {
+            font-size: 24px;
+        }
+        
+        .menu-text {
+            font-size: 16px;
+            font-weight: 500;
+        }
+        
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+            padding-right: 40px;
+        }
+        
+        .stats {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 15px;
+        }
+        
+        .stat-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+        }
+        
+        .view {
+            display: none;
+        }
+        
+        .view.active {
+            display: block;
+        }
+        
+        .backup-section {
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e0e0e0;
+        }
+        
+        .backup-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .backup-btn {
+            flex: 1;
+            padding: 12px 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .export-btn {
+            background: #28a745;
+            color: white;
+        }
+        
+        .import-btn {
+            background: #007bff;
+            color: white;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .input-section {
+            padding: 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .input-group {
+            margin-bottom: 15px;
+        }
+        
+        .input-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #666;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        input[type="text"], 
+        input[type="number"],
+        input[type="date"],
+        select,
+        textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: border 0.3s;
+            font-family: inherit;
+        }
+        
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .additional-section {
+            margin-top: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        
+        .additional-header {
+            background: #f5f5f5;
+            padding: 12px 15px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .additional-header h3 {
+            font-size: 14px;
+            color: #666;
+            font-weight: 600;
+        }
+        
+        .toggle-icon {
+            transition: transform 0.3s;
+            font-size: 18px;
+            color: #999;
+        }
+        
+        .toggle-icon.expanded {
+            transform: rotate(180deg);
+        }
+        
+        .additional-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease-out;
+        }
+        
+        .additional-content.expanded {
+            max-height: 800px;
+        }
+        
+        .additional-inner {
+            padding: 15px;
+        }
+        
+        .add-btn, .save-btn, .cancel-btn {
+            width: 100%;
+            padding: 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .add-btn {
+            background: #667eea;
+            color: white;
+        }
+        
+        .save-btn {
+            background: #28a745;
+            color: white;
+            margin-bottom: 10px;
+        }
+        
+        .cancel-btn {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .filters {
+            padding: 15px 20px;
+            border-bottom: 1px solid #e0e0e0;
+            overflow-x: auto;
+            white-space: nowrap;
+        }
+        
+        .filter-btn {
+            display: inline-block;
+            padding: 8px 15px;
+            margin-right: 8px;
+            background: #f0f0f0;
+            border: none;
+            border-radius: 20px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .filter-btn.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .content-section {
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        
+        .task, .budget-item, .habit-item, .project-item {
+            padding: 15px 20px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .item-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .task-checkbox, .habit-checkbox {
+            width: 24px;
+            height: 24px;
+            border: 2px solid #ddd;
+            border-radius: 50%;
+            cursor: pointer;
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .task-checkbox.checked, .habit-checkbox.checked {
+            background: #667eea;
+            border-color: #667eea;
+        }
+        
+        .task-checkbox.checked::after, .habit-checkbox.checked::after {
+            content: '✓';
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .item-content {
+            flex: 1;
+        }
+        
+        .item-text {
+            font-size: 16px;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .item-text.completed {
+            text-decoration: line-through;
+            color: #999;
+        }
+        
+        .item-meta {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-top: 5px;
+        }
+        
+        .badge {
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        
+        .category-work { background: #e3f2fd; color: #1976d2; }
+        .category-personal { background: #f3e5f5; color: #7b1fa2; }
+        .category-family { background: #fff3e0; color: #e65100; }
+        
+        .app-indi { background: #e1f5fe; color: #01579b; }
+        .app-group { background: #f3e5f5; color: #4a148c; }
+        .app-epic { background: #fff3e0; color: #e65100; }
+        
+        .status-badge { background: #e8f5e9; color: #2e7d32; }
+        .devops-yes { background: #c8e6c9; color: #1b5e20; }
+        .devops-no { background: #ffcdd2; color: #b71c1c; }
+        
+        .item-actions {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .btn-icon {
+            padding: 8px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .edit-btn {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .delete-btn {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+        
+        .expand-btn {
+            background: #f5f5f5;
+            color: #666;
+        }
+        
+        .expandable-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s;
+        }
+        
+        .expandable-content.expanded {
+            max-height: 1000px;
+            margin-top: 15px;
+        }
+        
+        .detail-row {
+            padding: 8px 0;
+            display: flex;
+            gap: 10px;
+        }
+        
+        .detail-label {
+            font-weight: 600;
+            color: #666;
+            min-width: 120px;
+        }
+        
+        .detail-value {
+            color: #333;
+        }
+        
+        .edit-form {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-top: 15px;
+        }
+        
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal.active {
+            display: flex;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            max-width: 90%;
+            max-height: 90%;
+            overflow-y: auto;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #323232;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 25px;
+            font-size: 14px;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        
+        .toast.show {
+            opacity: 1;
+        }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+        }
+        
+        .summary-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            margin: 20px;
+            border-radius: 15px;
+            color: white;
+        }
+        
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .summary-row:last-child {
+            border-bottom: none;
+        }
+        
+        /* Foldable phone support */
+        @media (min-width: 600px) {
+            .content-section {
+                max-height: 600px;
+            }
+            
+            .project-item {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="burger-menu" id="burgerMenu" onclick="toggleMenu()">
+                <div class="burger-line"></div>
+                <div class="burger-line"></div>
+                <div class="burger-line"></div>
+            </div>
+            <h1 id="pageTitle">📝 To-Do List</h1>
+            <div class="stats" id="stats"></div>
+        </div>
+        
+        <!-- TO-DO LIST VIEW -->
+        <div id="todoView" class="view active">
+            <div class="backup-section">
+                <div class="backup-buttons">
+                    <button class="backup-btn export-btn" onclick="exportData('todo')">💾 Export</button>
+                    <button class="backup-btn import-btn" onclick="document.getElementById('todoFileInput').click()">📂 Import</button>
+                </div>
+                <input type="file" id="todoFileInput" class="file-input" accept=".json" onchange="importData(event, 'todo')">
+            </div>
+            
+            <div class="input-section">
+                <div class="input-group">
+                    <label>Task</label>
+                    <input type="text" id="taskInput" placeholder="What needs to be done?">
+                </div>
+                
+                <div class="input-group">
+                    <label>Category</label>
+                    <select id="categorySelect">
+                        <option value="work">💼 Work</option>
+                        <option value="personal">👤 Personal</option>
+                        <option value="family">👨‍👩‍👧 Family</option>
+                    </select>
+                </div>
+                
+                <div class="input-group">
+                    <label>Due Date (Optional)</label>
+                    <input type="date" id="dateInput">
+                </div>
+                
+                <div class="additional-section">
+                    <div class="additional-header" onclick="toggleAdditional('todo')">
+                        <h3>⚙️ Additional</h3>
+                        <span class="toggle-icon" id="todoAdditionalToggle">▼</span>
+                    </div>
+                    <div class="additional-content" id="todoAdditionalContent">
+                        <div class="additional-inner">
+                            <div class="input-group">
+                                <label>Description</label>
+                                <textarea id="descriptionInput" placeholder="Add details..."></textarea>
+                            </div>
+                            <div class="input-group">
+                                <label>Frequency</label>
+                                <select id="recurringSelect">
+                                    <option value="none">No Repeat</option>
+                                    <option value="daily">🔁 Every Day</option>
+                                    <option value="weekly">📅 Every Week</option>
+                                    <option value="biweekly">📅 Every Alternate Week</option>
+                                    <option value="monthly">📆 Every Month</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <button class="add-btn" onclick="addTask()" style="margin-top: 15px;">Add Task</button>
+            </div>
+            
+            <div class="filters" id="todoFilters"></div>
+            <div class="content-section" id="todoContent"></div>
+        </div>
+        
+        <!-- BUDGET TRACKER VIEW -->
+        <div id="budgetView" class="view">
+            <div class="backup-section">
+                <div class="backup-buttons">
+                    <button class="backup-btn export-btn" onclick="exportData('budget')">💾 Export</button>
+                    <button class="backup-btn import-btn" onclick="document.getElementById('budgetFileInput').click()">📂 Import</button>
+                </div>
+                <input type="file" id="budgetFileInput" class="file-input" accept=".json" onchange="importData(event, 'budget')">
+            </div>
+            
+            <div class="summary-card" id="budgetSummary"></div>
+            
+            <div class="input-section">
+                <div class="input-group">
+                    <label>Description</label>
+                    <input type="text" id="budgetDescInput" placeholder="What is this for?">
+                </div>
+                
+                <div class="input-group">
+                    <label>Amount</label>
+                    <input type="number" id="budgetAmountInput" placeholder="0.00" step="0.01">
+                </div>
+                
+                <div class="input-group">
+                    <label>Type</label>
+                    <select id="budgetTypeSelect">
+                        <option value="income">💰 Income</option>
+                        <option value="expense">💸 Expense</option>
+                    </select>
+                </div>
+                
+                <div class="input-group">
+                    <label>Category</label>
+                    <select id="budgetCategorySelect">
+                        <option value="salary">💼 Salary</option>
+                        <option value="food">🍔 Food</option>
+                        <option value="transport">🚗 Transport</option>
+                        <option value="bills">📄 Bills</option>
+                        <option value="entertainment">🎬 Entertainment</option>
+                        <option value="shopping">🛍️ Shopping</option>
+                        <option value="health">💊 Health</option>
+                        <option value="other">📌 Other</option>
+                    </select>
+                </div>
+                
+                <div class="input-group">
+                    <label>Date</label>
+                    <input type="date" id="budgetDateInput">
+                </div>
+                
+                <button class="add-btn" onclick="addBudgetItem()">Add Transaction</button>
+            </div>
+            
+            <div class="content-section" id="budgetContent"></div>
+        </div>
+        
+        <!-- HABIT TRACKER VIEW -->
+        <div id="habitView" class="view">
+            <div class="backup-section">
+                <div class="backup-buttons">
+                    <button class="backup-btn export-btn" onclick="exportData('habit')">💾 Export</button>
+                    <button class="backup-btn import-btn" onclick="document.getElementById('habitFileInput').click()">📂 Import</button>
+                </div>
+                <input type="file" id="habitFileInput" class="file-input" accept=".json" onchange="importData(event, 'habit')">
+            </div>
+            
+            <div class="input-section">
+                <div class="input-group">
+                    <label>Habit Name</label>
+                    <input type="text" id="habitInput" placeholder="e.g., Morning Exercise">
+                </div>
+                
+                <div class="input-group">
+                    <label>Category</label>
+                    <select id="habitCategorySelect">
+                        <option value="health">💪 Health</option>
+                        <option value="productivity">⚡ Productivity</option>
+                        <option value="learning">📚 Learning</option>
+                        <option value="mindfulness">🧘 Mindfulness</option>
+                        <option value="other">📌 Other</option>
+                    </select>
+                </div>
+                
+                <div class="input-group">
+                    <label>Goal</label>
+                    <select id="habitGoalSelect">
+                        <option value="daily">Daily</option>
+                        <option value="weekly">3x per week</option>
+                        <option value="custom">Custom</option>
+                    </select>
+                </div>
+                
+                <button class="add-btn" onclick="addHabit()">Add Habit</button>
+            </div>
+            
+            <div class="content-section" id="habitContent"></div>
+        </div>
+        
+        <!-- PROJECTS VIEW -->
+        <div id="projectsView" class="view">
+            <div class="backup-section">
+                <div class="backup-buttons">
+                    <button class="backup-btn export-btn" onclick="exportData('projects')">💾 Export</button>
+                    <button class="backup-btn import-btn" onclick="document.getElementById('projectsFileInput').click()">📂 Import</button>
+                </div>
+                <input type="file" id="projectsFileInput" class="file-input" accept=".json" onchange="importData(event, 'projects')">
+            </div>
+            
+            <div class="input-section">
+                <div class="input-group">
+                    <label>Application</label>
+                    <select id="projectAppInput">
+                        <option value="indi">Indi Claims</option>
+                        <option value="group">Group Claims</option>
+                        <option value="epic">EPIC</option>
+                    </select>
+                </div>
+                
+                <div class="input-group">
+                    <label>Project ID</label>
+                    <input type="number" id="projectIdInput" placeholder="Enter project ID">
+                </div>
+                
+                <div class="input-group">
+                    <label>Project Name</label>
+                    <input type="text" id="projectNameInput" placeholder="Enter project name">
+                </div>
+                
+                <div class="input-group">
+                    <label>Status</label>
+                    <select id="projectStatusInput">
+                        <option value="requirement">Requirement</option>
+                        <option value="rab">RAB Approved</option>
+                        <option value="analysis">Analysis</option>
+                        <option value="cab">CAB Approved</option>
+                        <option value="development">Development</option>
+                        <option value="uat">UAT</option>
+                        <option value="release">Release</option>
+                        <option value="warranty">Warranty</option>
+                    </select>
+                </div>
+                
+                <div class="input-group">
+                    <label>DevOps Status Updated</label>
+                    <select id="projectDevOpsInput" onchange="toggleReasonField()">
+                        <option value="no">No</option>
+                        <option value="yes">Yes</option>
+                    </select>
+                </div>
+                
+                <div class="input-group" id="reasonGroup" style="display: none;">
+                    <label>Reason</label>
+                    <textarea id="projectReasonInput" placeholder="Provide reason..."></textarea>
+                </div>
+                
+                <div class="input-group">
+                    <label>Current Remarks</label>
+                    <textarea id="projectRemarksInput" placeholder="Add remarks..."></textarea>
+                </div>
+                
+                <button class="add-btn" onclick="addProject()">Add Project</button>
+            </div>
+            
+            <div class="filters" id="projectsFilters"></div>
+            <div class="content-section" id="projectsContent"></div>
+        </div>
+    </div>
+    
+    <!-- SIDE MENU -->
+    <div class="menu-overlay" id="menuOverlay" onclick="toggleMenu()"></div>
+    <div class="side-menu" id="sideMenu">
+        <div class="menu-item active" onclick="switchView('todo')">
+            <span class="menu-icon">📝</span>
+            <span class="menu-text">To-Do List</span>
+        </div>
+        <div class="menu-item" onclick="switchView('budget')">
+            <span class="menu-icon">💰</span>
+            <span class="menu-text">Budget Tracker</span>
+        </div>
+        <div class="menu-item" onclick="switchView('habit')">
+            <span class="menu-icon">🎯</span>
+            <span class="menu-text">Habit Tracker</span>
+        </div>
+        <div class="menu-item" onclick="switchView('projects')">
+            <span class="menu-icon">📊</span>
+            <span class="menu-text">Projects</span>
+        </div>
+    </div>
+    
+    <!-- EDIT MODAL -->
+    <div class="modal" id="editModal">
+        <div class="modal-content" id="editModalContent"></div>
+    </div>
+    
+    <div class="toast" id="toast"></div>
+
+    <script src="app-v2.js"></script>
+</body>
+</html>
