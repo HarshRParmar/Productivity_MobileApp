@@ -606,7 +606,12 @@
         /* Table view */
         .table-container {
             overflow: auto;
-            max-height: 500px;
+            max-height: calc(100vh - 320px);
+            min-height: 400px;
+        }
+        
+        .table-container.fullscreen {
+            max-height: calc(100vh - 200px);
         }
         
         .data-table {
@@ -653,11 +658,12 @@
         }
         
         .bulk-actions {
-            padding: 15px 20px;
+            padding: 10px 15px;
             background: #fff3cd;
             border-bottom: 2px solid #ffc107;
             display: none;
-            gap: 10px;
+            flex-wrap: wrap;
+            gap: 8px;
             align-items: center;
         }
         
@@ -665,17 +671,29 @@
             display: flex;
         }
         
+        .bulk-actions span {
+            font-weight: 600;
+            font-size: 14px;
+            width: 100%;
+            margin-bottom: 5px;
+        }
+        
         .bulk-action-btn {
-            padding: 8px 15px;
+            flex: 1;
+            min-width: 80px;
+            padding: 10px 8px;
             border: none;
             border-radius: 8px;
             font-weight: 600;
+            font-size: 13px;
             cursor: pointer;
+            white-space: nowrap;
         }
         
         .mark-closed-btn {
             background: #28a745;
             color: white;
+            flex: 1.2;
         }
         
         .select-all-btn {
@@ -795,8 +813,8 @@
             <div class="bulk-actions" id="todoBulkActions">
                 <span id="todoSelectedCount">0 selected</span>
                 <button class="bulk-action-btn select-all-btn" onclick="selectAllTodo()">Select All</button>
-                <button class="bulk-action-btn deselect-all-btn" onclick="deselectAllTodo()">Deselect All</button>
-                <button class="bulk-action-btn mark-closed-btn" onclick="markTodoClosed()">Mark as Closed</button>
+                <button class="bulk-action-btn deselect-all-btn" onclick="deselectAllTodo()">Clear</button>
+                <button class="bulk-action-btn mark-closed-btn" onclick="markTodoClosed()">✓ Close</button>
             </div>
             
             <div class="filters" id="todoFilters"></div>
@@ -975,8 +993,8 @@
             <div class="bulk-actions" id="projectsBulkActions">
                 <span id="projectsSelectedCount">0 selected</span>
                 <button class="bulk-action-btn select-all-btn" onclick="selectAllProjects()">Select All</button>
-                <button class="bulk-action-btn deselect-all-btn" onclick="deselectAllProjects()">Deselect All</button>
-                <button class="bulk-action-btn mark-closed-btn" onclick="markProjectsClosed()">Mark as Closed</button>
+                <button class="bulk-action-btn deselect-all-btn" onclick="deselectAllProjects()">Clear</button>
+                <button class="bulk-action-btn mark-closed-btn" onclick="markProjectsClosed()">✓ Close</button>
             </div>
             
             <div class="filters" id="projectsFilters"></div>
