@@ -82,8 +82,18 @@ function toggleViewMode(section, mode) {
     
     // Toggle content visibility
     document.getElementById(`${section}Content`).classList.toggle('hidden', mode === 'table');
-    document.getElementById(`${section}TableContent`).classList.toggle('hidden', mode === 'card');
+    const tableContainer = document.getElementById(`${section}TableContent`);
+    tableContainer.classList.toggle('hidden', mode === 'card');
+    tableContainer.classList.toggle('fullscreen', mode === 'table');
     document.getElementById(`${section}Filters`).style.display = mode === 'card' ? 'block' : 'none';
+    
+    // Hide input section when in table mode
+    if (section === 'todo' || section === 'projects') {
+        const inputSection = document.querySelector(`#${section}View .input-section`);
+        if (inputSection) {
+            inputSection.style.display = mode === 'card' ? 'block' : 'none';
+        }
+    }
     
     // Render appropriate view
     if (section === 'todo') {
@@ -128,16 +138,21 @@ function updateTodoSelection() {
 function markTodoClosed() {
     if (selectedTasks.size === 0) return;
     
+    let count = 0;
     selectedTasks.forEach(id => {
         const task = tasks.find(t => t.id === id);
-        if (task) task.closed = true;
+        if (task) {
+            task.closed = true;
+            count++;
+        }
     });
     
     selectedTasks.clear();
     saveData();
     renderTodoTable();
     updateTodoSelection();
-    showToast(`✅ ${selectedTasks.size} tasks marked as closed!`);
+    showToast(`✅ ${count} task(s) marked as closed!`);
+}
 }
 
 // Multi-select functions for Projects
@@ -831,13 +846,25 @@ function toggleHabit(id) {
     if (!habit) return;
     
     const today = new Date().toISOString().split('T')[0];
-    const alreadyDone = habit.history.includes(today);
+    const alreadyDone = habit.history && habit.history.includes(today);
+    
+    // Initialize history if it doesn't exist
+    if (!habit.history) {
+        habit.history = [];
+    }
     
     if (alreadyDone) {
+        // Remove today from history
         habit.history = habit.history.filter(d => d !== today);
-        habit.streak = Math.max(0, habit.streak - 1);
+        // Recalculate streak
+        if (habit.streak > 0) {
+            habit.streak = Math.max(0, habit.streak - 1);
+        }
     } else {
+        // Add today to history
         habit.history.push(today);
+        
+        // Calculate streak
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
         const yesterdayStr = yesterday.toISOString().split('T')[0];
@@ -866,9 +893,9 @@ function deleteHabit(id) {
 
 function renderHabits() {
     const totalHabits = habits.length;
+    const today = new Date().toISOString().split('T')[0];
     const todayCompleted = habits.filter(h => {
-        const today = new Date().toISOString().split('T')[0];
-        return h.history.includes(today);
+        return h.history && h.history.includes(today);
     }).length;
     
     document.getElementById('stats').innerHTML = `
@@ -889,7 +916,14 @@ function renderHabits() {
         };
         
         habits.forEach(habit => {
-            const today = new Date().toISOString().split('T')[0];
+            // Ensure habit has history array
+            if (!habit.history) {
+                habit.history = [];
+            }
+            if (!habit.streak) {
+                habit.streak = 0;
+            }
+            
             const isDoneToday = habit.history.includes(today);
             
             html += `
@@ -899,7 +933,7 @@ function renderHabits() {
                         <div class="item-content">
                             <div class="item-text">${habit.name}</div>
                             <div class="item-meta">
-                                <span class="badge">${categoryLabels[habit.category]}</span>
+                                <span class="badge">${categoryLabels[habit.category] || habit.category}</span>
                                 <span class="badge" style="background: #ffd54f; color: #f57f17;">🔥 ${habit.streak} day streak</span>
                             </div>
                         </div>
@@ -914,6 +948,9 @@ function renderHabits() {
     }
     
     document.getElementById('habitContent').innerHTML = html;
+    
+    // Save to ensure any fixes to data structure are persisted
+    saveData();
 }
 
 // === PROJECTS FUNCTIONS ===
