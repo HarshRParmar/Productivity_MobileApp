@@ -1,3 +1,16 @@
+// ============================================================
+// GOOGLE DRIVE SYNC — paste your Client ID below after setup
+// Setup guide: https://console.cloud.google.com
+// ============================================================
+const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID_HERE';
+const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
+const DRIVE_FILE_NAME = 'productivity-app-data.json';
+
+let googleUser = null;
+let driveFileId = null;
+let syncStatus = 'idle'; // idle | syncing | synced | error | not-configured
+
+// ============================================================
 // Data storage
 let tasks = JSON.parse(localStorage.getItem('tasks')) || [];
 let budgetItems = JSON.parse(localStorage.getItem('budgetItems')) || [];
@@ -15,6 +28,251 @@ function saveData() {
     localStorage.setItem('budgetItems', JSON.stringify(budgetItems));
     localStorage.setItem('habits', JSON.stringify(habits));
     localStorage.setItem('projects', JSON.stringify(projects));
+    // Auto-sync to Drive after every save if user is signed in
+    if (googleUser) driveSave();
+}
+
+// ============================================================
+// GOOGLE DRIVE SYNC FUNCTIONS
+// ============================================================
+
+function updateSyncUI() {
+    const btn = document.getElementById('googleSyncBtn');
+    const avatar = document.getElementById('googleAvatar');
+    const nameEl = document.getElementById('googleUserName');
+    if (!btn) return;
+
+    if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID_HERE') {
+        btn.innerHTML = '⚙️ Setup Drive Sync';
+        btn.className = 'google-btn google-setup';
+        if (avatar) avatar.style.display = 'none';
+        return;
+    }
+
+    if (googleUser) {
+        const profile = googleUser.getBasicProfile();
+        btn.innerHTML = '🔄 Sync Now';
+        btn.className = 'google-btn google-sync';
+        if (avatar) { avatar.src = profile.getImageUrl(); avatar.style.display = 'block'; }
+        if (nameEl) nameEl.textContent = profile.getName();
+        const signOutBtn = document.getElementById('googleSignOutBtn');
+        if (signOutBtn) signOutBtn.style.display = 'block';
+        updateSyncBadge(syncStatus);
+    } else {
+        btn.innerHTML = '<img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:18px;vertical-align:middle;margin-right:8px">Sign in with Google';
+        btn.className = 'google-btn google-signin';
+        if (avatar) avatar.style.display = 'none';
+        if (nameEl) nameEl.textContent = '';
+        const signOutBtn = document.getElementById('googleSignOutBtn');
+        if (signOutBtn) signOutBtn.style.display = 'none';
+        updateSyncBadge('idle');
+    }
+}
+
+function updateSyncBadge(status) {
+    const badge = document.getElementById('syncBadge');
+    if (!badge) return;
+    const map = {
+        idle:          { text: '',           style: 'display:none' },
+        syncing:       { text: '🔄 Syncing…', style: 'color:#1976d2' },
+        synced:        { text: '✅ Synced',   style: 'color:#2e7d32' },
+        error:         { text: '❌ Sync failed', style: 'color:#c62828' },
+        'not-configured': { text: '⚙️ Not configured', style: 'color:#999' }
+    };
+    const s = map[status] || map.idle;
+    badge.textContent = s.text;
+    badge.setAttribute('style', s.style + ';font-size:12px;margin-left:10px;');
+}
+
+function initGoogleAuth() {
+    if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID_HERE') {
+        syncStatus = 'not-configured';
+        updateSyncUI();
+        return;
+    }
+    if (typeof gapi === 'undefined') return;
+
+    gapi.load('auth2', () => {
+        gapi.auth2.init({ client_id: GOOGLE_CLIENT_ID, scope: DRIVE_SCOPE })
+        .then(auth2 => {
+            if (auth2.isSignedIn.get()) {
+                googleUser = auth2.currentUser.get();
+                driveFileId = localStorage.getItem('driveFileId') || null;
+                updateSyncUI();
+                drivePull(); // load latest data from Drive on startup
+            } else {
+                updateSyncUI();
+            }
+            auth2.isSignedIn.listen(signedIn => {
+                googleUser = signedIn ? auth2.currentUser.get() : null;
+                if (!signedIn) driveFileId = null;
+                updateSyncUI();
+            });
+        }).catch(() => { syncStatus = 'error'; updateSyncUI(); });
+    });
+}
+
+function googleSignIn() {
+    if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID_HERE') {
+        showToast('⚙️ Please configure your Google Client ID first!');
+        showDriveSetupGuide();
+        return;
+    }
+    if (typeof gapi === 'undefined') { showToast('❌ Google API not loaded'); return; }
+    gapi.auth2.getAuthInstance().signIn();
+}
+
+function googleSignOut() {
+    if (typeof gapi === 'undefined') return;
+    gapi.auth2.getAuthInstance().signOut().then(() => {
+        googleUser = null;
+        driveFileId = null;
+        localStorage.removeItem('driveFileId');
+        updateSyncUI();
+        showToast('👋 Signed out from Google');
+    });
+}
+
+async function getAccessToken() {
+    if (!googleUser) return null;
+    return googleUser.getAuthResponse().access_token;
+}
+
+async function driveFindFile(token) {
+    const res = await fetch(
+        `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='${DRIVE_FILE_NAME}'&fields=files(id,name,modifiedTime)`,
+        { headers: { Authorization: `Bearer ${token}` } }
+    );
+    const data = await res.json();
+    return data.files && data.files.length > 0 ? data.files[0] : null;
+}
+
+async function driveSave() {
+    if (!googleUser) return;
+    syncStatus = 'syncing';
+    updateSyncBadge(syncStatus);
+    try {
+        const token = await getAccessToken();
+        const payload = JSON.stringify({ tasks, budgetItems, habits, projects, savedAt: new Date().toISOString() });
+        const blob = new Blob([payload], { type: 'application/json' });
+
+        if (!driveFileId) {
+            // Find existing file first
+            const existing = await driveFindFile(token);
+            if (existing) driveFileId = existing.id;
+        }
+
+        let res;
+        if (driveFileId) {
+            // Update existing
+            res = await fetch(
+                `https://www.googleapis.com/upload/drive/v3/files/${driveFileId}?uploadType=media`,
+                { method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: blob }
+            );
+        } else {
+            // Create new file in appDataFolder
+            const meta = JSON.stringify({ name: DRIVE_FILE_NAME, parents: ['appDataFolder'] });
+            const form = new FormData();
+            form.append('metadata', new Blob([meta], { type: 'application/json' }));
+            form.append('file', blob);
+            res = await fetch(
+                'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart',
+                { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: form }
+            );
+            const created = await res.clone().json();
+            if (created.id) { driveFileId = created.id; localStorage.setItem('driveFileId', driveFileId); }
+        }
+
+        if (res.ok) {
+            syncStatus = 'synced';
+        } else {
+            syncStatus = 'error';
+        }
+    } catch (e) {
+        syncStatus = 'error';
+    }
+    updateSyncBadge(syncStatus);
+}
+
+async function drivePull() {
+    if (!googleUser) return;
+    syncStatus = 'syncing';
+    updateSyncBadge(syncStatus);
+    try {
+        const token = await getAccessToken();
+        const file = await driveFindFile(token);
+        if (!file) { syncStatus = 'synced'; updateSyncBadge(syncStatus); return; }
+        driveFileId = file.id;
+        localStorage.setItem('driveFileId', driveFileId);
+
+        const res = await fetch(
+            `https://www.googleapis.com/drive/v3/files/${driveFileId}?alt=media`,
+            { headers: { Authorization: `Bearer ${token}` } }
+        );
+        const data = await res.json();
+
+        if (data.tasks) tasks = data.tasks;
+        if (data.budgetItems) budgetItems = data.budgetItems;
+        if (data.habits) habits = data.habits;
+        if (data.projects) projects = data.projects;
+
+        localStorage.setItem('tasks', JSON.stringify(tasks));
+        localStorage.setItem('budgetItems', JSON.stringify(budgetItems));
+        localStorage.setItem('habits', JSON.stringify(habits));
+        localStorage.setItem('projects', JSON.stringify(projects));
+
+        // Re-render current view
+        if (currentView === 'todo') renderTasks();
+        else if (currentView === 'budget') renderBudget();
+        else if (currentView === 'habit') renderHabits();
+        else if (currentView === 'projects') renderProjects();
+
+        syncStatus = 'synced';
+        showToast('✅ Data loaded from Google Drive!');
+    } catch (e) {
+        syncStatus = 'error';
+        showToast('❌ Drive sync failed');
+    }
+    updateSyncBadge(syncStatus);
+}
+
+function handleSyncBtn() {
+    if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID_HERE') {
+        showDriveSetupGuide();
+        return;
+    }
+    if (!googleUser) {
+        googleSignIn();
+    } else {
+        drivePull();
+    }
+}
+
+function showDriveSetupGuide() {
+    const modal = document.getElementById('editModal');
+    const content = document.getElementById('editModalContent');
+    content.innerHTML = `
+        <h2 style="margin-bottom:15px;">☁️ Setup Google Drive Sync</h2>
+        <p style="color:#555;font-size:14px;line-height:1.6;margin-bottom:15px;">
+            Follow these steps to enable syncing your data across devices via Google Drive:
+        </p>
+        <div style="background:#f5f5f5;border-radius:10px;padding:15px;font-size:13px;line-height:2;">
+            <b>1.</b> Go to <a href="https://console.cloud.google.com" target="_blank" style="color:#1976d2;">console.cloud.google.com</a><br>
+            <b>2.</b> Create a new project (e.g. "Productivity App")<br>
+            <b>3.</b> Enable <b>Google Drive API</b><br>
+            <b>4.</b> Go to <b>APIs & Services → OAuth consent screen</b><br>
+            &nbsp;&nbsp;&nbsp;• User type: External<br>
+            &nbsp;&nbsp;&nbsp;• Add scope: <code>drive.appdata</code><br>
+            <b>5.</b> Go to <b>Credentials → Create Credentials → OAuth 2.0 Client ID</b><br>
+            &nbsp;&nbsp;&nbsp;• Type: <b>Web application</b><br>
+            &nbsp;&nbsp;&nbsp;• Authorised JS origins: your GitHub Pages URL<br>
+            <b>6.</b> Copy the <b>Client ID</b><br>
+            <b>7.</b> Open <code>app-v3.js</code>, replace <code>YOUR_GOOGLE_CLIENT_ID_HERE</code> with your Client ID<br>
+            <b>8.</b> Push to GitHub → Done! ✅
+        </div>
+        <button class="cancel-btn" style="margin-top:15px;" onclick="closeModal()">Close</button>
+    `;
+    modal.classList.add('active');
 }
 
 function showToast(message) {
@@ -87,13 +345,11 @@ function toggleViewMode(section, mode) {
     tableContainer.classList.toggle('fullscreen', mode === 'table');
     document.getElementById(`${section}Filters`).style.display = mode === 'card' ? 'block' : 'none';
     
-    // Hide input section when in table mode — but NOT on tablet (left panel stays visible)
+    // Toggle table-mode class on the view — CSS handles input section visibility
+    // (class-based is more reliable than inline styles in PWA standalone mode)
+    const viewEl = document.getElementById(`${section}View`);
     if (section === 'todo' || section === 'projects') {
-        const inputSection = document.querySelector(`#${section}View .input-section`);
-        const isTablet = window.innerWidth >= 700;
-        if (inputSection && !isTablet) {
-            inputSection.style.display = mode === 'card' ? 'block' : 'none';
-        }
+        viewEl.classList.toggle('table-mode', mode === 'table');
     }
     
     // Render appropriate view
@@ -1349,3 +1605,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 renderTasks();
+
+// Initialize Google Auth after page load
+window.addEventListener('load', () => { initGoogleAuth(); });

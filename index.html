@@ -714,10 +714,110 @@
             font-weight: 600;
         }
 
-        /* ============================================
-           ONEPLUS OPEN — FOLDED (phone) = default styles above
-           ONEPLUS OPEN — UNFOLDED (tablet, ≥700px) = below
-           ============================================ */
+        /* ---- table-mode: hide input on phone, keep visible on tablet ---- */
+        #todoView.table-mode .input-section,
+        #projectsView.table-mode .input-section {
+            display: none;
+        }
+
+        /* On tablet the left panel overrides the hide */
+        @media (min-width: 700px) {
+            #todoView.table-mode .input-section,
+            #projectsView.table-mode .input-section {
+                display: flex !important;
+                flex-direction: column;
+            }
+        }
+
+        /* ---- Google Drive Sync UI ---- */
+        .google-section {
+            padding: 15px 20px;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .google-user-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            min-height: 28px;
+        }
+
+        #googleAvatar {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: none;
+        }
+
+        #googleUserName {
+            font-size: 13px;
+            font-weight: 600;
+            color: #333;
+            flex: 1;
+        }
+
+        #syncBadge {
+            font-size: 12px;
+        }
+
+        .google-btn {
+            width: 100%;
+            padding: 11px 15px;
+            border: none;
+            border-radius: 10px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .google-signin {
+            background: white;
+            border: 2px solid #ddd;
+            color: #444;
+        }
+
+        .google-sync {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 2px solid #c8e6c9;
+        }
+
+        .google-setup {
+            background: #f3f4f6;
+            color: #666;
+            border: 2px solid #e0e0e0;
+            font-size: 13px;
+        }
+
+        .google-signout-btn {
+            width: 100%;
+            margin-top: 8px;
+            padding: 7px;
+            background: none;
+            border: none;
+            color: #999;
+            font-size: 12px;
+            cursor: pointer;
+            text-decoration: underline;
+        }
+
+        .menu-section-label {
+            padding: 12px 20px 4px;
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #aaa;
+        }
+    </style>
+
+    <!-- Google API for Drive Sync -->
+    <script src="https://apis.google.com/js/api.js" async defer></script>
 
         /* Tablet panel label */
         .tablet-panel-label {
@@ -1206,6 +1306,7 @@
     <!-- SIDE MENU -->
     <div class="menu-overlay" id="menuOverlay" onclick="toggleMenu()"></div>
     <div class="side-menu" id="sideMenu">
+        <div class="menu-section-label">Navigation</div>
         <div class="menu-item active" onclick="switchView('todo', this)">
             <span class="menu-icon">📝</span>
             <span class="menu-text">To-Do List</span>
@@ -1221,6 +1322,22 @@
         <div class="menu-item" onclick="switchView('projects', this)">
             <span class="menu-icon">📊</span>
             <span class="menu-text">Projects</span>
+        </div>
+
+        <div class="menu-section-label" style="margin-top:10px;">☁️ Cloud Sync</div>
+        <div class="google-section">
+            <div class="google-user-row">
+                <img id="googleAvatar" src="" alt="">
+                <span id="googleUserName"></span>
+                <span id="syncBadge"></span>
+            </div>
+            <button class="google-btn google-signin" id="googleSyncBtn" onclick="handleSyncBtn()">
+                <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" style="width:18px;vertical-align:middle;margin-right:8px">
+                Sign in with Google
+            </button>
+            <button class="google-signout-btn" id="googleSignOutBtn" onclick="googleSignOut()" style="display:none">
+                Sign out
+            </button>
         </div>
     </div>
     
