@@ -34,14 +34,14 @@ function toggleMenu() {
     burger.classList.toggle('active');
 }
 
-function switchView(view) {
+function switchView(view, el) {
     currentView = view;
     
     document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
     document.getElementById(view + 'View').classList.add('active');
     
     document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
-    event.target.closest('.menu-item').classList.add('active');
+    if (el) el.classList.add('active');
     
     const titles = {
         todo: '📝 To-Do List',
@@ -87,10 +87,11 @@ function toggleViewMode(section, mode) {
     tableContainer.classList.toggle('fullscreen', mode === 'table');
     document.getElementById(`${section}Filters`).style.display = mode === 'card' ? 'block' : 'none';
     
-    // Hide input section when in table mode
+    // Hide input section when in table mode — but NOT on tablet (left panel stays visible)
     if (section === 'todo' || section === 'projects') {
         const inputSection = document.querySelector(`#${section}View .input-section`);
-        if (inputSection) {
+        const isTablet = window.innerWidth >= 700;
+        if (inputSection && !isTablet) {
             inputSection.style.display = mode === 'card' ? 'block' : 'none';
         }
     }
@@ -152,7 +153,6 @@ function markTodoClosed() {
     renderTodoTable();
     updateTodoSelection();
     showToast(`✅ ${count} task(s) marked as closed!`);
-}
 }
 
 // Multi-select functions for Projects
@@ -492,7 +492,11 @@ function renderTasks() {
     document.getElementById('todoFilters').innerHTML = filtersHtml;
     
     const active = tasks.filter(t => !t.completed).length;
-    document.getElementById('stats').innerHTML = `<span class="stat-badge">${active} active</span>`;
+    const isTablet = window.innerWidth >= 700;
+    document.getElementById('stats').innerHTML = `
+        <span class="stat-badge">${active} active</span>
+        ${isTablet ? '<span class="fold-indicator">📖 Tablet Mode</span>' : ''}
+    `;
     
     let filteredTasks = tasks.filter(task => {
         if (currentCategory !== 'all' && task.category !== currentCategory) return false;
@@ -948,9 +952,7 @@ function renderHabits() {
     }
     
     document.getElementById('habitContent').innerHTML = html;
-    
-    // Save to ensure any fixes to data structure are persisted
-    saveData();
+    // Note: saveData() removed from here — only called when data actually changes
 }
 
 // === PROJECTS FUNCTIONS ===
