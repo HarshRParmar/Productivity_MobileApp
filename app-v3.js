@@ -1,7 +1,7 @@
 // ============================================================
 // GOOGLE DRIVE SYNC — paste your Client ID below after setup
 // ============================================================
-const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_CLIENT_ID_HERE';
+const GOOGLE_CLIENT_ID = '665332289126-hk5ovrrcfbcvv9s1oltcamhdp6bp4an1.apps.googleusercontent.com';
 const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
 const DRIVE_FILE_NAME = 'productivity-app-data.json';
 
