@@ -305,9 +305,10 @@ function switchView(view, el) {
         todo: '📝 To-Do List',
         budget: '💰 Budget Tracker',
         habit: '🎯 Habit Tracker',
-        projects: '📊 Projects'
+        projects: '📊 Projects',
+        weeklyPlanner: '⚡ Weekly Planner'
     };
-    document.getElementById('pageTitle').textContent = titles[view];
+    document.getElementById('pageTitle').textContent = titles[view] || view;
     
     toggleMenu();
     
@@ -315,6 +316,7 @@ function switchView(view, el) {
     else if (view === 'budget') renderBudget();
     else if (view === 'habit') renderHabits();
     else if (view === 'projects') renderProjects();
+    else if (view === 'weeklyPlanner') renderWeeklyPlanner();
 }
 
 function toggleAdditional(type) {
@@ -1608,3 +1610,509 @@ renderTasks();
 
 // Initialize Google Auth after page load
 window.addEventListener('load', () => { initGoogleAuth(); });
+
+
+// ================================================================
+// ⚡ WEEKLY PLANNER MODULE
+// Week: Apr 13–19, 2026 | Harsh R Parmar | Mumbai
+// ================================================================
+
+const WP_DAYS = [
+    { key: 'mon', label: 'Mon', date: '2026-04-13', short: '13' },
+    { key: 'tue', label: 'Tue', date: '2026-04-14', short: '14' },
+    { key: 'wed', label: 'Wed', date: '2026-04-15', short: '15' },
+    { key: 'thu', label: 'Thu', date: '2026-04-16', short: '16' },
+    { key: 'fri', label: 'Fri', date: '2026-04-17', short: '17' },
+    { key: 'sat', label: 'Sat', date: '2026-04-18', short: '18' },
+    { key: 'sun', label: 'Sun', date: '2026-04-19', short: '19' },
+];
+
+const WP_SLOTS = {
+    METRO:   { label: '🚇 Metro Commute',      cls: 'wp-slot-metro'   },
+    WORK:    { label: '💼 Work Hours',          cls: 'wp-slot-work'    },
+    EVENING: { label: '🏠 Evening (after 8 PM)', cls: 'wp-slot-evening' },
+    ANY:     { label: '📌 Anytime',             cls: 'wp-slot-any'     },
+};
+
+const WP_TYPE = { DAILY: 'daily', ONETIME: 'onetime', RECURRING: 'recurring' };
+
+// ----------------------------------------------------------------
+// MASTER TASK LIST
+// ----------------------------------------------------------------
+const WP_MASTER_TASKS = [
+
+    // ── DAILY HABITS ────────────────────────────────────────────
+    {
+        id: 'habit_podcast',
+        text: 'AI Daily Brief — podcast',
+        slot: WP_SLOTS.METRO,
+        type: WP_TYPE.DAILY,
+        category: 'habit',
+        emoji: '🎧',
+        days: null,         // null = every day
+        spillable: false,
+    },
+
+    // ── PMP RENEWAL (one-time) ───────────────────────────────────
+    {
+        id: 'pmp_promo',
+        text: 'PMP — check promo codes (go live today)',
+        slot: WP_SLOTS.ANY,
+        type: WP_TYPE.ONETIME,
+        category: 'pmp',
+        emoji: '🎓',
+        days: ['mon'],
+        spillable: true,
+    },
+    {
+        id: 'pmp_payment',
+        text: 'PMP — complete payment & submit renewal',
+        slot: WP_SLOTS.ANY,
+        type: WP_TYPE.ONETIME,
+        category: 'pmp',
+        emoji: '🎓',
+        days: ['mon', 'tue'],
+        spillable: true,
+    },
+
+    // ── CCA CERTIFICATION — Theory (Metro) ──────────────────────
+    {
+        id: 'cca_cowork',
+        text: 'CCA — finish Claude Cowork (90% → 100%)',
+        slot: WP_SLOTS.METRO,
+        type: WP_TYPE.ONETIME,
+        category: 'cca',
+        emoji: '📘',
+        days: ['mon'],
+        spillable: true,
+    },
+    {
+        id: 'cca_code_theory',
+        text: 'CCA — Claude Code in Action (theory read)',
+        slot: WP_SLOTS.METRO,
+        type: WP_TYPE.RECURRING,
+        category: 'cca',
+        emoji: '📘',
+        days: ['tue', 'wed'],
+        spillable: true,
+    },
+    {
+        id: 'cca_ai_cap_theory',
+        text: 'CCA — AI Capabilities & Limitations (theory)',
+        slot: WP_SLOTS.METRO,
+        type: WP_TYPE.RECURRING,
+        category: 'cca',
+        emoji: '📘',
+        days: ['thu', 'fri'],
+        spillable: true,
+    },
+    {
+        id: 'cca_api_theory',
+        text: 'CCA — Building with Claude API (theory read)',
+        slot: WP_SLOTS.METRO,
+        type: WP_TYPE.RECURRING,
+        category: 'cca',
+        emoji: '📘',
+        days: ['sat', 'sun'],
+        spillable: true,
+    },
+
+    // ── CCA CERTIFICATION — Hands-On (Evening) ──────────────────
+    {
+        id: 'cca_code_lab',
+        text: 'CCA — Claude Code in Action (hands-on lab, 30 min)',
+        slot: WP_SLOTS.EVENING,
+        type: WP_TYPE.RECURRING,
+        category: 'cca',
+        emoji: '💻',
+        days: ['mon', 'tue', 'wed'],
+        spillable: true,
+    },
+    {
+        id: 'cca_api_lab',
+        text: 'CCA — Building with Claude API (hands-on lab, 30 min)',
+        slot: WP_SLOTS.EVENING,
+        type: WP_TYPE.RECURRING,
+        category: 'cca',
+        emoji: '💻',
+        days: ['thu', 'fri'],
+        spillable: true,
+    },
+    {
+        id: 'cca_mcp_lab',
+        text: 'CCA — Intro to MCP (hands-on lab, 30 min)',
+        slot: WP_SLOTS.EVENING,
+        type: WP_TYPE.RECURRING,
+        category: 'cca',
+        emoji: '💻',
+        days: ['sat'],
+        spillable: true,
+    },
+    {
+        id: 'cca_agents_lab',
+        text: 'CCA — Agent Skills + Subagents (hands-on lab, 30 min)',
+        slot: WP_SLOTS.EVENING,
+        type: WP_TYPE.RECURRING,
+        category: 'cca',
+        emoji: '💻',
+        days: ['sun'],
+        spillable: true,
+    },
+
+    // ── WORK: RELEASE / DEVOPS ───────────────────────────────────
+    {
+        id: 'work_cr_transition',
+        text: 'Release — Production CR transition (Indi & Group Claims)',
+        slot: WP_SLOTS.WORK,
+        type: WP_TYPE.ONETIME,
+        category: 'work',
+        emoji: '🚀',
+        days: ['mon', 'tue'],
+        spillable: true,
+    },
+    {
+        id: 'work_uat',
+        text: 'Release — UAT sign-off all CRs + DevOps status + upload artifacts',
+        slot: WP_SLOTS.WORK,
+        type: WP_TYPE.ONETIME,
+        category: 'work',
+        emoji: '🚀',
+        days: ['mon', 'tue', 'wed'],
+        spillable: true,
+    },
+    {
+        id: 'work_dep_sys',
+        text: 'Release — Dependent system deployment: identify & communicate',
+        slot: WP_SLOTS.WORK,
+        type: WP_TYPE.ONETIME,
+        category: 'work',
+        emoji: '🚀',
+        days: ['tue', 'wed'],
+        spillable: true,
+    },
+    {
+        id: 'work_cab',
+        text: 'Release — Indi Claims 2 CRs: CAB review',
+        slot: WP_SLOTS.WORK,
+        type: WP_TYPE.ONETIME,
+        category: 'work',
+        emoji: '🚀',
+        days: ['wed', 'thu'],
+        spillable: true,
+    },
+
+    // ── WORK: VENDOR API ────────────────────────────────────────
+    {
+        id: 'work_surepass',
+        text: 'Vendor — SurePass API: discuss w/ Claims Head & BSG + send quotations & video',
+        slot: WP_SLOTS.WORK,
+        type: WP_TYPE.ONETIME,
+        category: 'work',
+        emoji: '🔗',
+        days: ['mon', 'tue'],
+        spillable: true,
+    },
+    {
+        id: 'work_hv_extract',
+        text: 'Vendor — HyperVerge Data Extraction API: share sample doc',
+        slot: WP_SLOTS.WORK,
+        type: WP_TYPE.ONETIME,
+        category: 'work',
+        emoji: '🔗',
+        days: ['tue', 'wed'],
+        spillable: true,
+    },
+    {
+        id: 'work_hv_aadhaar',
+        text: 'Vendor — HyperVerge Aadhaar Masking API: discussion',
+        slot: WP_SLOTS.WORK,
+        type: WP_TYPE.ONETIME,
+        category: 'work',
+        emoji: '🔗',
+        days: ['wed', 'thu'],
+        spillable: true,
+    },
+
+    // ── PERSONAL: INSURANCE ─────────────────────────────────────
+    {
+        id: 'ins_mom',
+        text: 'Insurance — Mom cashless claim: follow up Parth Shah / Keyur Mehta',
+        slot: WP_SLOTS.EVENING,
+        type: WP_TYPE.ONETIME,
+        category: 'personal',
+        emoji: '🏥',
+        days: ['mon'],
+        spillable: true,
+    },
+    {
+        id: 'ins_kikabhai',
+        text: 'Insurance — Kikabhai claim reimbursement: status check',
+        slot: WP_SLOTS.EVENING,
+        type: WP_TYPE.ONETIME,
+        category: 'personal',
+        emoji: '🏥',
+        days: ['mon', 'tue'],
+        spillable: true,
+    },
+
+    // ── PERSONAL: ERRANDS ────────────────────────────────────────
+    {
+        id: 'errand_cycle',
+        text: "Errand — Daughter's cycle (3 yr old): research & shortlist",
+        slot: WP_SLOTS.EVENING,
+        type: WP_TYPE.ONETIME,
+        category: 'personal',
+        emoji: '🛒',
+        days: ['tue', 'wed'],
+        spillable: true,
+    },
+    {
+        id: 'errand_earphones',
+        text: 'Errand — TWS earphones: best noise cancellation under ₹3,000',
+        slot: WP_SLOTS.EVENING,
+        type: WP_TYPE.ONETIME,
+        category: 'personal',
+        emoji: '🛒',
+        days: ['wed', 'thu'],
+        spillable: true,
+    },
+];
+
+// ----------------------------------------------------------------
+// STATE  (localStorage key is week-specific so it never conflicts)
+// ----------------------------------------------------------------
+const WP_KEY = 'weeklyPlanner_Apr13_2026';
+
+function wpLoadState() {
+    try { return JSON.parse(localStorage.getItem(WP_KEY)) || {}; }
+    catch { return {}; }
+}
+function wpSaveState(s) { localStorage.setItem(WP_KEY, JSON.stringify(s)); }
+
+function wpDayState(s, day) { return s[day] || {}; }
+
+function wpSetStatus(s, day, id, status) {
+    if (!s[day]) s[day] = {};
+    if (status === 'pending') delete s[day][id];
+    else s[day][id] = status;
+    wpSaveState(s);
+}
+
+// ----------------------------------------------------------------
+// TASK RESOLUTION — which tasks appear on a given day
+// ----------------------------------------------------------------
+function wpTasksForDay(dayKey, state) {
+    const dayIdx = WP_DAYS.findIndex(d => d.key === dayKey);
+    const result = [];
+
+    for (const task of WP_MASTER_TASKS) {
+
+        // Daily: always shown
+        if (task.type === WP_TYPE.DAILY) {
+            result.push({ ...task, status: wpDayState(state, dayKey)[task.id] || 'pending', spillover: false });
+            continue;
+        }
+
+        const scheduledToday = task.days && task.days.includes(dayKey);
+        let isSpillover = false;
+
+        // Check if task was missed on a prior scheduled day
+        if (task.spillable && !scheduledToday) {
+            for (let i = 0; i < dayIdx; i++) {
+                const prev = WP_DAYS[i];
+                if (!task.days.includes(prev.key)) continue;
+                const prevStatus = wpDayState(state, prev.key)[task.id];
+                if (!prevStatus || prevStatus === 'skipped') { isSpillover = true; break; }
+                if (prevStatus === 'done') break;
+            }
+        }
+
+        if (scheduledToday || isSpillover) {
+            // One-time tasks already done on an earlier day — hide
+            if (task.type === WP_TYPE.ONETIME) {
+                let doneEarlier = false;
+                for (let i = 0; i < dayIdx; i++) {
+                    if (wpDayState(state, WP_DAYS[i].key)[task.id] === 'done') { doneEarlier = true; break; }
+                }
+                if (doneEarlier) continue;
+            }
+            result.push({ ...task, status: wpDayState(state, dayKey)[task.id] || 'pending', spillover: isSpillover });
+        }
+    }
+    return result;
+}
+
+// ----------------------------------------------------------------
+// PROGRESS
+// ----------------------------------------------------------------
+function wpProgress(dayKey, state) {
+    const t = wpTasksForDay(dayKey, state);
+    if (!t.length) return { pct: 0, done: 0, total: 0 };
+    const done = t.filter(x => x.status === 'done').length;
+    return { pct: Math.round(done / t.length * 100), done, total: t.length };
+}
+
+function wpTodayKey() {
+    const iso = new Date().toISOString().slice(0, 10);
+    return (WP_DAYS.find(d => d.date === iso) || WP_DAYS[0]).key;
+}
+
+// ----------------------------------------------------------------
+// RENDER
+// ----------------------------------------------------------------
+let wpCurrentDay = null;
+
+function renderWeeklyPlanner() {
+    const el = document.getElementById('wpContainer');
+    if (!el) return;
+    const state = wpLoadState();
+    if (!wpCurrentDay) wpCurrentDay = wpTodayKey();
+    const todayKey = wpTodayKey();
+
+    el.innerHTML = `
+        <div class="wp-header">
+            <div class="wp-title">⚡ Weekly Planner</div>
+            <div class="wp-subtitle">Harsh · Apr 13–19, 2026 · Mumbai</div>
+        </div>
+
+        <div class="wp-week-strip">
+            ${WP_DAYS.map(d => {
+                const p = wpProgress(d.key, state);
+                const isActive = d.key === wpCurrentDay;
+                const isToday  = d.key === todayKey;
+                return `<div class="wp-day-chip ${isActive ? 'active' : ''} ${isToday ? 'today' : ''}"
+                             onclick="wpSelectDay('${d.key}')">
+                    <span class="wp-chip-label">${d.label}</span>
+                    <span class="wp-chip-date">${d.short}</span>
+                    <div class="wp-chip-bar"><div class="wp-chip-fill" style="width:${p.pct}%"></div></div>
+                    <span class="wp-chip-pct">${p.pct}%</span>
+                </div>`;
+            }).join('')}
+        </div>
+
+        <div id="wpDayContainer">
+            ${wpRenderDay(wpCurrentDay, state, todayKey)}
+        </div>
+    `;
+
+    // Update header stats
+    const prog = wpProgress(wpCurrentDay, state);
+    document.getElementById('stats').innerHTML = `
+        <span class="stat-badge">${prog.done}/${prog.total} done · ${prog.pct}%</span>
+        ${window.innerWidth >= 700 ? '<span class="fold-indicator">📖 Tablet Mode</span>' : ''}
+    `;
+}
+
+function wpRenderDay(dayKey, state, todayKey) {
+    const day  = WP_DAYS.find(d => d.key === dayKey);
+    const prog = wpProgress(dayKey, state);
+    const tasks = wpTasksForDay(dayKey, state);
+    const isToday = dayKey === todayKey;
+
+    const spillovers = tasks.filter(t => t.spillover);
+    const regular    = tasks.filter(t => !t.spillover);
+
+    const bySlot = (slotObj) => regular.filter(t => t.slot === slotObj);
+
+    return `
+        <div class="wp-day-header">
+            <div class="wp-day-name">${day.label}, Apr ${day.short}</div>
+            ${isToday ? '<span class="wp-today-badge">TODAY</span>' : ''}
+            <div class="wp-day-actions">
+                <button class="wp-btn-sm" onclick="wpAllDone('${dayKey}')">✓ All Done</button>
+                <button class="wp-btn-sm wp-btn-reset" onclick="wpResetDay('${dayKey}')">↺ Reset</button>
+            </div>
+        </div>
+
+        <div class="wp-progress-wrap">
+            <div class="wp-progress-bar">
+                <div class="wp-progress-fill" style="width:${prog.pct}%"></div>
+            </div>
+            <span class="wp-progress-label">${prog.done}/${prog.total} · ${prog.pct}%</span>
+        </div>
+
+        ${spillovers.length ? `
+        <div class="wp-spillover-banner">
+            <div class="wp-spillover-title">
+                ⚠️ ${spillovers.length} task${spillovers.length > 1 ? 's' : ''} carried over from previous day
+            </div>
+            <div class="wp-spillover-list">
+                ${spillovers.map(t => wpTaskHTML(t, dayKey)).join('')}
+            </div>
+        </div>` : ''}
+
+        ${wpGroup(WP_SLOTS.METRO.label,   bySlot(WP_SLOTS.METRO),   dayKey, WP_SLOTS.METRO.cls)}
+        ${wpGroup(WP_SLOTS.WORK.label,    bySlot(WP_SLOTS.WORK),    dayKey, WP_SLOTS.WORK.cls)}
+        ${wpGroup(WP_SLOTS.EVENING.label, bySlot(WP_SLOTS.EVENING), dayKey, WP_SLOTS.EVENING.cls)}
+        ${wpGroup(WP_SLOTS.ANY.label,     bySlot(WP_SLOTS.ANY),     dayKey, WP_SLOTS.ANY.cls)}
+    `;
+}
+
+function wpGroup(title, tasks, dayKey, cls) {
+    if (!tasks.length) return '';
+    return `<div class="wp-group">
+        <div class="wp-group-header ${cls}">${title}</div>
+        ${tasks.map(t => wpTaskHTML(t, dayKey)).join('')}
+    </div>`;
+}
+
+function wpTaskHTML(task, dayKey) {
+    const isDone = task.status === 'done';
+    const isSkip = task.status === 'skipped';
+    return `
+        <div class="wp-task ${isDone ? 'wp-done' : ''} ${isSkip ? 'wp-skipped' : ''} wp-cat-${task.category}">
+            <button class="wp-check ${isDone ? 'checked' : ''}"
+                    onclick="wpToggleDone('${dayKey}','${task.id}')">
+                ${isDone ? '✓' : ''}
+            </button>
+            <span class="wp-task-text">${task.emoji} ${task.text}</span>
+            <div class="wp-task-actions">
+                ${!isDone ? `<button class="wp-skip-btn ${isSkip ? 'active' : ''}"
+                                     onclick="wpToggleSkip('${dayKey}','${task.id}')"
+                                     title="${isSkip ? 'Undo skip' : 'Skip for today'}">
+                                ${isSkip ? '↩' : '⤼'}
+                             </button>` : ''}
+            </div>
+        </div>`;
+}
+
+// ----------------------------------------------------------------
+// ACTIONS
+// ----------------------------------------------------------------
+function wpSelectDay(k) {
+    wpCurrentDay = k;
+    renderWeeklyPlanner();
+}
+
+function wpToggleDone(day, id) {
+    const s = wpLoadState();
+    const cur = wpDayState(s, day)[id] || 'pending';
+    wpSetStatus(s, day, id, cur === 'done' ? 'pending' : 'done');
+    renderWeeklyPlanner();
+}
+
+function wpToggleSkip(day, id) {
+    const s = wpLoadState();
+    const cur = wpDayState(s, day)[id] || 'pending';
+    wpSetStatus(s, day, id, cur === 'skipped' ? 'pending' : 'skipped');
+    renderWeeklyPlanner();
+}
+
+function wpAllDone(day) {
+    const s = wpLoadState();
+    wpTasksForDay(day, s).forEach(t => wpSetStatus(s, day, t.id, 'done'));
+    renderWeeklyPlanner();
+    showToast('✅ All tasks marked done!');
+}
+
+function wpResetDay(day) {
+    const s = wpLoadState();
+    delete s[day];
+    wpSaveState(s);
+    renderWeeklyPlanner();
+    showToast('↺ Day reset!');
+}
+
+// ================================================================
+// END WEEKLY PLANNER MODULE
+// ================================================================

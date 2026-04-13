@@ -814,6 +814,312 @@
             letter-spacing: 1px;
             color: #aaa;
         }
+
+        /* ============================================================
+           WEEKLY PLANNER STYLES
+        ============================================================ */
+
+        /* The planner view overrides the default white background */
+        #weeklyPlannerView.view.active {
+            display: block;
+            background: #0f1117;
+            min-height: 60vh;
+        }
+
+        .wp-wrap {
+            background: #0f1117;
+            color: #e8eaf0;
+            min-height: 60vh;
+            padding-bottom: 20px;
+        }
+
+        /* Sub-header */
+        .wp-header {
+            background: linear-gradient(135deg, #12172a 0%, #0e1320 100%);
+            padding: 16px 16px 12px;
+            border-bottom: 1px solid #1e2536;
+        }
+        .wp-title {
+            font-size: 19px;
+            font-weight: 700;
+            color: #e8ecff;
+            letter-spacing: -0.3px;
+        }
+        .wp-subtitle {
+            font-size: 12px;
+            color: #6b7294;
+            margin-top: 3px;
+        }
+
+        /* Week strip */
+        .wp-week-strip {
+            display: flex;
+            gap: 7px;
+            padding: 12px 12px 10px;
+            background: #0d1018;
+            border-bottom: 1px solid #181d28;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+        }
+        .wp-week-strip::-webkit-scrollbar { display: none; }
+
+        .wp-day-chip {
+            flex: 0 0 auto;
+            width: 60px;
+            background: #161b2a;
+            border: 1.5px solid #1e2438;
+            border-radius: 12px;
+            padding: 9px 6px 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.18s ease;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .wp-day-chip:active { transform: scale(0.93); }
+        .wp-day-chip.active {
+            background: #172040;
+            border-color: #667eea;
+            box-shadow: 0 0 0 1px #667eea, 0 4px 12px rgba(102,126,234,0.2);
+        }
+        .wp-day-chip.today .wp-chip-label { color: #667eea; font-weight: 800; }
+        .wp-day-chip.active .wp-chip-date { color: #a0b4ff; }
+
+        .wp-chip-label {
+            display: block;
+            font-size: 10px;
+            font-weight: 600;
+            color: #6b7294;
+            text-transform: uppercase;
+            letter-spacing: 0.6px;
+            margin-bottom: 2px;
+        }
+        .wp-chip-date {
+            display: block;
+            font-size: 17px;
+            font-weight: 700;
+            color: #c8ceea;
+            line-height: 1.2;
+            margin-bottom: 5px;
+        }
+        .wp-chip-bar {
+            height: 3px;
+            background: #1e2438;
+            border-radius: 2px;
+            margin: 0 4px 4px;
+            overflow: hidden;
+        }
+        .wp-chip-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 2px;
+            transition: width 0.35s ease;
+        }
+        .wp-chip-pct {
+            display: block;
+            font-size: 9px;
+            color: #4a5270;
+            letter-spacing: 0.2px;
+            font-weight: 500;
+        }
+
+        /* Day header */
+        .wp-day-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 13px 16px 11px;
+            background: #0d1018;
+            border-bottom: 1px solid #181d28;
+        }
+        .wp-day-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: #d8deed;
+            flex: 1;
+        }
+        .wp-today-badge {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: #fff;
+            font-size: 8px;
+            font-weight: 800;
+            padding: 3px 8px;
+            border-radius: 20px;
+            letter-spacing: 1px;
+        }
+        .wp-day-actions { display: flex; gap: 6px; }
+        .wp-btn-sm {
+            background: #1a2248;
+            border: 1.5px solid #667eea;
+            color: #8899ff;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 5px 11px;
+            border-radius: 7px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+        .wp-btn-sm:active { background: #1e2d56; }
+        .wp-btn-reset {
+            background: #161820;
+            border-color: #2a2e44;
+            color: #5a6080;
+        }
+
+        /* Progress bar */
+        .wp-progress-wrap {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 16px 8px;
+            background: #0d1018;
+            border-bottom: 1px solid #181d28;
+        }
+        .wp-progress-bar {
+            flex: 1;
+            height: 5px;
+            background: #1a1f30;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .wp-progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 3px;
+            transition: width 0.4s ease;
+        }
+        .wp-progress-label {
+            font-size: 11px;
+            color: #4a5270;
+            white-space: nowrap;
+            min-width: 72px;
+            text-align: right;
+            font-weight: 500;
+        }
+
+        /* Spillover banner */
+        .wp-spillover-banner {
+            background: #1a160a;
+            border: 1px solid #3a2c0a;
+            border-left: 3px solid #f5a623;
+            padding: 10px 14px 6px;
+            margin: 10px 12px;
+            border-radius: 0 8px 8px 0;
+        }
+        .wp-spillover-title {
+            font-size: 12px;
+            color: #f5a623;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        .wp-spillover-list { display: flex; flex-direction: column; }
+
+        /* Task groups */
+        .wp-group { margin-top: 14px; }
+        .wp-group-header {
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 1.1px;
+            text-transform: uppercase;
+            padding: 7px 16px 6px;
+            border-top: 1px solid transparent;
+            border-bottom: 1px solid transparent;
+        }
+        .wp-slot-metro   { color: #5bc8f5; background: #0a151f; border-color: #12233a !important; }
+        .wp-slot-work    { color: #9b7ff5; background: #120e20; border-color: #1e1530 !important; }
+        .wp-slot-evening { color: #f5a040; background: #1a1108; border-color: #301e08 !important; }
+        .wp-slot-any     { color: #5cc87a; background: #0a140c; border-color: #122014 !important; }
+
+        /* Individual task */
+        .wp-task {
+            display: flex;
+            align-items: flex-start;
+            gap: 11px;
+            padding: 11px 14px 11px 12px;
+            border-bottom: 1px solid #131720;
+            transition: background 0.12s;
+        }
+        .wp-task:active { background: #141820; }
+
+        /* Category accent stripe */
+        .wp-cat-habit    { border-left: 3px solid #5bc8f5; }
+        .wp-cat-pmp      { border-left: 3px solid #f5c842; }
+        .wp-cat-cca      { border-left: 3px solid #9b7ff5; }
+        .wp-cat-work     { border-left: 3px solid #667eea; }
+        .wp-cat-personal { border-left: 3px solid #f57070; }
+
+        .wp-task.wp-done { opacity: 0.38; }
+        .wp-task.wp-done .wp-task-text {
+            text-decoration: line-through;
+            color: #3a4060;
+        }
+        .wp-task.wp-skipped { opacity: 0.28; }
+        .wp-task.wp-skipped .wp-task-text {
+            text-decoration: line-through;
+            color: #4a3030;
+        }
+
+        .wp-check {
+            width: 25px;
+            height: 25px;
+            min-width: 25px;
+            border-radius: 50%;
+            border: 2px solid #252b42;
+            background: transparent;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 800;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.15s ease;
+            line-height: 1;
+        }
+        .wp-check:active { transform: scale(0.88); }
+        .wp-check.checked {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            border-color: #667eea;
+            box-shadow: 0 2px 8px rgba(102,126,234,0.45);
+        }
+
+        .wp-task-text {
+            flex: 1;
+            font-size: 13px;
+            line-height: 1.5;
+            color: #b0b8d0;
+            padding-top: 3px;
+        }
+
+        .wp-task-actions { display: flex; align-items: flex-start; padding-top: 3px; }
+        .wp-skip-btn {
+            background: transparent;
+            border: 1px solid #1e2438;
+            color: #3a4060;
+            border-radius: 5px;
+            padding: 3px 8px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.13s;
+            line-height: 1;
+        }
+        .wp-skip-btn.active {
+            color: #f5a040;
+            border-color: #f5a040;
+            background: #1a110a;
+        }
+
+        /* Tablet layout for planner */
+        @media (min-width: 700px) {
+            .wp-day-chip { width: 72px; }
+            .wp-week-strip { justify-content: center; gap: 10px; padding: 14px 20px; }
+            .wp-task-text { font-size: 14px; }
+        }
+
     </style>
 
     <!-- Google Identity Services (modern replacement for gapi.auth2) -->
@@ -1303,6 +1609,14 @@
                 <div class="table-container hidden" id="projectsTableContent"></div>
             </div><!-- /tablet-right -->
         </div><!-- /projectsView -->
+
+        <!-- ⚡ WEEKLY PLANNER VIEW -->
+        <div id="weeklyPlannerView" class="view">
+            <div class="wp-wrap" id="wpContainer">
+                <!-- Injected by renderWeeklyPlanner() -->
+            </div>
+        </div>
+
     </div>
     
     <!-- SIDE MENU -->
@@ -1324,6 +1638,10 @@
         <div class="menu-item" onclick="switchView('projects', this)">
             <span class="menu-icon">📊</span>
             <span class="menu-text">Projects</span>
+        </div>
+        <div class="menu-item" onclick="switchView('weeklyPlanner', this)">
+            <span class="menu-icon">⚡</span>
+            <span class="menu-text">Weekly Planner</span>
         </div>
 
         <div class="menu-section-label" style="margin-top:10px;">☁️ Cloud Sync</div>
