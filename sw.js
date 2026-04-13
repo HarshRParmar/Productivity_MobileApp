@@ -1,5 +1,5 @@
 // Bump this version every time you deploy changes — forces PWA to reload fresh files
-const CACHE_NAME = 'productivity-app-v4';
+const CACHE_NAME = 'productivity-app-v5-planner';
 
 const urlsToCache = [
   '/Productivity_MobileApp/icon-192.png',
